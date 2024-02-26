@@ -65,12 +65,16 @@ impl<'tcx> LateLintPass<'tcx> for BoxedLocal {
         _: Span,
         fn_def_id: LocalDefId,
     ) {
+        // shank: note how they are using the "return early" pattern here...
         if let Some(header) = fn_kind.header() {
             if header.abi != Abi::Rust {
                 return;
             }
         }
 
+        // QUERY: shank: why do they get info about the 'parent'?
+        // ANSWER: shank: to find out if the fn is in a TraitImpl or the Trait definition itself, we need to
+        // get the parent node. Then they return early if the parent is an Impl of some trait.
         let parent_id = cx
             .tcx
             .hir()
@@ -88,6 +92,9 @@ impl<'tcx> LateLintPass<'tcx> for BoxedLocal {
             // find `self` ty for this trait if relevant
             if let ItemKind::Trait(_, _, _, _, items) = item.kind {
                 for trait_item in items {
+                    // QUERY: shank: what is this comparision checking for?
+                    // ANSWER: shank: this is checking if the owner of the trait_item is the fn that we are currently
+                    // processing.
                     if trait_item.id.owner_id.def_id == fn_def_id {
                         // be sure we have `self` parameter in this function
                         if trait_item.kind == (AssocItemKind::Fn { has_self: true }) {
@@ -107,6 +114,7 @@ impl<'tcx> LateLintPass<'tcx> for BoxedLocal {
         };
 
         let infcx = cx.tcx.infer_ctxt().build();
+        // shank: this visitor determines how expressions are being used (#useful)
         ExprUseVisitor::new(&mut v, &infcx, fn_def_id, cx.param_env, cx.typeck_results()).consume_body(body);
 
         for node in v.set {
@@ -134,6 +142,7 @@ fn is_argument(tcx: TyCtxt<'_>, id: HirId) -> bool {
     matches!(tcx.parent_hir_node(id), Node::Param(_))
 }
 
+// shank: I dont understand this stuff...
 impl<'a, 'tcx> Delegate<'tcx> for EscapeDelegate<'a, 'tcx> {
     fn consume(&mut self, cmt: &PlaceWithHirId<'tcx>, _: HirId) {
         if cmt.place.projections.is_empty() {
@@ -166,6 +175,9 @@ impl<'a, 'tcx> Delegate<'tcx> for EscapeDelegate<'a, 'tcx> {
                 // skip if there is a `self` parameter binding to a type
                 // that contains `Self` (i.e.: `self: Box<Self>`), see #4804
                 if let Some(trait_self_ty) = self.trait_self_ty {
+                    // shank: tcx.hir().name(hir_id) gives the Symbol (#useful)
+                    // QUERY: shank: would this 'Symbol' be a single name or would it have the complete path as well?
+                    // Most likely the symbol would be a single name...
                     if map.name(cmt.hir_id) == kw::SelfLower && cmt.place.ty().contains(trait_self_ty) {
                         return;
                     }

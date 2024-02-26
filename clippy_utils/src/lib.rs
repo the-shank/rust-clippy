@@ -2202,6 +2202,7 @@ pub fn is_no_std_crate(cx: &LateContext<'_>) -> bool {
     })
 }
 
+// shank: determines if the current crate is a "core" crate (#useful)
 pub fn is_no_core_crate(cx: &LateContext<'_>) -> bool {
     cx.tcx.hir().attrs(hir::CRATE_HIR_ID).iter().any(|attr| {
         if let ast::AttrKind::Normal(ref normal) = attr.kind {
