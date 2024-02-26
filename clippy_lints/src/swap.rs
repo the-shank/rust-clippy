@@ -181,12 +181,16 @@ fn check_manual_swap(cx: &LateContext<'_>, block: &Block<'_>) {
 
 /// Implementation of the `ALMOST_SWAPPED` lint.
 fn check_suspicious_swap(cx: &LateContext<'_>, block: &Block<'_>) {
+    // shank: iterating over two successive statements in the block...
     for [first, second] in block.stmts.array_windows() {
         if let Some((lhs0, rhs0)) = parse(first)
             && let Some((lhs1, rhs1)) = parse(second)
+            // QUERY: shank: check that the statements have the same 'SyntaxContext' (how does this help)?
             && first.span.eq_ctxt(second.span)
 			&& !in_external_macro(cx.sess(), first.span)
+            // shank: lhs of first is the same as rhs of the second
             && is_same(cx, lhs0, rhs1)
+            // shank: rhs of first is the same as lhs of the first
             && is_same(cx, lhs1, rhs0)
 			&& !is_same(cx, lhs1, rhs1) // Ignore a = b; a = a (#10421)
             && let Some(lhs_sugg) = match &lhs0 {
@@ -195,6 +199,7 @@ fn check_suspicious_swap(cx: &LateContext<'_>, block: &Block<'_>) {
             }
             && let Some(rhs_sugg) = Sugg::hir_opt(cx, rhs0)
         {
+            // shank: create a new 'span', starting from the first statement to the rhs of the second statement
             let span = first.span.to(rhs1.span);
             let Some(sugg) = std_or_core(cx) else { return };
             span_lint_and_then(
@@ -220,7 +225,9 @@ fn is_same(cx: &LateContext<'_>, lhs: ExprOrIdent<'_>, rhs: &Expr<'_>) -> bool {
     match lhs {
         ExprOrIdent::Expr(expr) => eq_expr_value(cx, expr, rhs),
         ExprOrIdent::Ident(ident) => {
+            // shank: see how they have done a nested pattern matching in one step (#useful)
             if let ExprKind::Path(QPath::Resolved(None, path)) = rhs.kind
+                // shank: check that there is only one PathSegment in the Path (#useful)
                 && let [segment] = &path.segments
                 && segment.ident == ident
             {
@@ -244,6 +251,8 @@ fn parse<'a, 'hir>(stmt: &'a Stmt<'hir>) -> Option<(ExprOrIdent<'hir>, &'a Expr<
             return Some((ExprOrIdent::Expr(lhs), rhs));
         }
     } else if let StmtKind::Local(expr) = stmt.kind {
+        // shank: check for a local 'let' binding
+        // shank: that is also an initializer
         if let Some(rhs) = expr.init {
             if let PatKind::Binding(_, _, ident_l, _) = expr.pat.kind {
                 return Some((ExprOrIdent::Ident(ident_l), rhs));

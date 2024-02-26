@@ -2190,7 +2190,9 @@ pub fn std_or_core(cx: &LateContext<'_>) -> Option<&'static str> {
     }
 }
 
+// shank: determines if the current crate is a "no_std" crate (#useful)
 pub fn is_no_std_crate(cx: &LateContext<'_>) -> bool {
+    // shank: "hir::CRATE_HIR_ID" is #useful
     cx.tcx.hir().attrs(hir::CRATE_HIR_ID).iter().any(|attr| {
         if let ast::AttrKind::Normal(ref normal) = attr.kind {
             normal.item.path == sym::no_std
