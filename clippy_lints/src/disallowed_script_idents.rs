@@ -20,11 +20,11 @@ declare_clippy_lint! {
     /// [aliases]: http://www.unicode.org/reports/tr24/tr24-31.html#Script_Value_Aliases
     /// [supported_scripts]: https://www.unicode.org/iso15924/iso15924-codes.html
     ///
-    /// ### Why is this bad?
+    /// ### Why restrict this?
     /// It may be not desired to have many different scripts for
     /// identifiers in the codebase.
     ///
-    /// Note that if you only want to allow plain English, you might want to use
+    /// Note that if you only want to allow typical English, you might want to use
     /// built-in [`non_ascii_idents`] lint instead.
     ///
     /// [`non_ascii_idents`]: https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html#non-ascii-idents
@@ -72,7 +72,7 @@ impl EarlyLintPass for DisallowedScriptIdents {
             return;
         }
 
-        let symbols = cx.sess().parse_sess.symbol_gallery.symbols.lock();
+        let symbols = cx.sess().psess.symbol_gallery.symbols.lock();
         // Sort by `Span` so that error messages make sense with respect to the
         // order of identifier locations in the code.
         let mut symbols: Vec<_> = symbols.iter().collect();
@@ -98,7 +98,7 @@ impl EarlyLintPass for DisallowedScriptIdents {
                         cx,
                         DISALLOWED_SCRIPT_IDENTS,
                         span,
-                        &format!(
+                        format!(
                             "identifier `{symbol_str}` has a Unicode script that is not allowed by configuration: {}",
                             script.full_name()
                         ),

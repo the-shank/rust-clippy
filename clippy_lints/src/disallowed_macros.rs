@@ -3,7 +3,7 @@ use clippy_utils::diagnostics::{span_lint_and_then, span_lint_hir_and_then};
 use clippy_utils::macros::macro_backtrace;
 use rustc_ast::Attribute;
 use rustc_data_structures::fx::FxHashSet;
-use rustc_errors::DiagnosticBuilder;
+use rustc_errors::Diag;
 use rustc_hir::def_id::DefIdMap;
 use rustc_hir::{
     Expr, ExprKind, ForeignItem, HirId, ImplItem, Item, ItemKind, OwnerId, Pat, Path, Stmt, TraitItem, Ty,
@@ -89,7 +89,7 @@ impl DisallowedMacros {
             if let Some(&index) = self.disallowed.get(&mac.def_id) {
                 let conf = &self.conf_disallowed[index];
                 let msg = format!("use of a disallowed macro `{}`", conf.path());
-                let add_note = |diag: &mut DiagnosticBuilder<'_, _>| {
+                let add_note = |diag: &mut Diag<'_, _>| {
                     if let Some(reason) = conf.reason() {
                         diag.note(reason);
                     }
@@ -102,11 +102,11 @@ impl DisallowedMacros {
                         DISALLOWED_MACROS,
                         cx.tcx.local_def_id_to_hir_id(derive_src.def_id),
                         mac.span,
-                        &msg,
+                        msg,
                         add_note,
                     );
                 } else {
-                    span_lint_and_then(cx, DISALLOWED_MACROS, mac.span, &msg, add_note);
+                    span_lint_and_then(cx, DISALLOWED_MACROS, mac.span, msg, add_note);
                 }
             }
         }

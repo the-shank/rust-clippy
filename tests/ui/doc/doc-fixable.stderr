@@ -341,5 +341,33 @@ help: try
 LL | /// There is no try (do() or `do_not()`).
    |                              ~~~~~~~~~~
 
-error: aborting due to 31 previous errors
+error: item in documentation is missing backticks
+  --> tests/ui/doc/doc-fixable.rs:234:5
+   |
+LL | /// ABes
+   |     ^^^^
+   |
+help: try
+   |
+LL | /// `ABes`
+   |     ~~~~~~
+
+error: item in documentation is missing backticks
+  --> tests/ui/doc/doc-fixable.rs:240:9
+   |
+LL |     /// foo()
+   |         ^^^^^
+   |
+help: try
+   |
+LL |     /// `foo()`
+   |         ~~~~~~~
+
+error: you should put bare URLs between `<`/`>` or make a proper Markdown link
+  --> tests/ui/doc/doc-fixable.rs:244:5
+   |
+LL | /// https://github.com/rust-lang/rust-clippy/pull/12836
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `<https://github.com/rust-lang/rust-clippy/pull/12836>`
+
+error: aborting due to 34 previous errors
 

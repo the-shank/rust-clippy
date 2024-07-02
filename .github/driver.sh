@@ -2,15 +2,18 @@
 
 set -ex
 
-# Check sysroot handling
-sysroot=$(./target/debug/clippy-driver --print sysroot)
-test "$sysroot" = "$(rustc --print sysroot)"
+sysroot="$(rustc --print sysroot)"
+case $OS in
+    Linux) export LD_LIBRARY_PATH="$sysroot/lib" ;;
+    macOS) export DYLD_FALLBACK_LIBRARY_PATH="$sysroot/lib" ;;
+    Windows) export PATH="$(cygpath "$sysroot")/bin:$PATH" ;;
+    *) exit 1
+esac
 
-if [[ ${OS} == "Windows" ]]; then
-	desired_sysroot=C:/tmp
-else
-	desired_sysroot=/tmp
-fi
+# Check sysroot handling
+test "$(./target/debug/clippy-driver --print sysroot)" = "$sysroot"
+
+desired_sysroot="target/sysroot"
 # Set --sysroot in command line
 sysroot=$(./target/debug/clippy-driver --sysroot $desired_sysroot --print sysroot)
 test "$sysroot" = $desired_sysroot
@@ -50,11 +53,11 @@ diff -u normalized.stderr tests/ui/double_neg.stderr
 
 # make sure "clippy-driver --rustc --arg" and "rustc --arg" behave the same
 SYSROOT=$(rustc --print sysroot)
-diff -u <(LD_LIBRARY_PATH=${SYSROOT}/lib ./target/debug/clippy-driver --rustc --version --verbose) <(rustc --version --verbose)
+diff -u <(./target/debug/clippy-driver --rustc --version --verbose) <(rustc --version --verbose)
 
 echo "fn main() {}" >target/driver_test.rs
 # we can't run 2 rustcs on the same file at the same time
-CLIPPY=$(LD_LIBRARY_PATH=${SYSROOT}/lib ./target/debug/clippy-driver ./target/driver_test.rs --rustc)
+CLIPPY=$(./target/debug/clippy-driver ./target/driver_test.rs --rustc)
 RUSTC=$(rustc ./target/driver_test.rs)
 diff -u <($CLIPPY) <($RUSTC)
 
