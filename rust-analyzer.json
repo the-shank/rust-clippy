@@ -1,0 +1,10 @@
+{
+    "rust-analyzer": {
+        "rustc": {
+            "source": "discover"
+        },
+        "linkedProjects": [
+            "/home/common/aunor-ws/ref/rust-clippy.git/worktrees/shanks/Cargo.toml"
+        ]
+    }
+}
